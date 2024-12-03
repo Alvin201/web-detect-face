@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Capture</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 100%;
+      max-width: 900px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .left-container {
+      width: 50%;
+      padding-right: 20px;
+    }
+
+    .right-container {
+      width: 45%;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .video-container {
+      width: 100%;
+      height: 400px;
+      background-color: #dcdcdc;
+      position: relative;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .video-container video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .capture-btn {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+      width: 100%;
+    }
+
+    .capture-btn:hover {
+      background-color: #45a049;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #555;
+    }
+
+    .photo-container {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .photo-container img {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 8px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Left side: Input fields -->
+    <div class="left-container">
+      <div class="title">Face Capture</div>
+
+      <!-- Card Number and Cardholder Name Inputs -->
+      <div class="input-group">
+        <label for="cardNumber">Card Number</label>
+        <input type="text" id="cardNumber" placeholder="Enter Card Number" />
+      </div>
+
+      <div class="input-group">
+        <label for="cardName">Cardholder Name</label>
+        <input type="text" id="cardName" placeholder="Enter Cardholder Name" />
+      </div>
+
+      <!-- Capture Button -->
+      <button class="capture-btn" id="captureBtn">Capture Face</button>
+
+      <!-- Status Text -->
+      <div class="status" id="status">Waiting for face capture...</div>
+    </div>
+
+    <!-- Right side: Video Feed -->
+    <div class="right-container">
+      <!-- Video Container for Webcam Feed -->
+      <div class="video-container">
+        <video id="inputVideo" autoplay></video>
+        <canvas id="overlay" style="position: absolute; margin-left: -225px;margin-top:50px;"></canvas>
+      </div>
+
+      <!-- Captured Photo Display -->
+      <div class="photo-container" id="photoContainer">
+        <h3>Captured Photo</h3>
+        <img id="capturedPhoto" src="" alt="Captured Face" />
+      </div>
+    </div>
+  </div>
+
+  <script src="face-api.js"></script>
+  <script src="detect-face.js"></script>
+  <script>
+  
+   // Accessing the video element and other elements
+   const video = document.getElementById('inputVideo');
+    const captureBtn = document.getElementById('captureBtn');
+    const status = document.getElementById('status');
+    const cardNumberInput = document.getElementById('cardNumber');
+    const cardNameInput = document.getElementById('cardName');
+    const photoContainer = document.getElementById('photoContainer');
+    const capturedPhoto = document.getElementById('capturedPhoto');
+
+    // Create a canvas element for capturing the image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Handle the face capture button click
+    captureBtn.addEventListener('click', () => {
+      const cardNumber = cardNumberInput.value.trim();
+      const cardName = cardNameInput.value.trim();
+
+      if (!cardNumber || !cardName) {
+        status.textContent = 'Please enter both card number and cardholder name.';
+        status.style.color = 'red';
+        return;
+      }
+
+      // Capture the current frame from the video feed
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Convert the captured image to a data URL
+      const dataUrl = canvas.toDataURL('image/jpeg');
+
+      // Display the captured photo
+      capturedPhoto.src = dataUrl;
+      photoContainer.style.display = 'block';
+
+      //console.log(dataUrl);
+
+      const data = {
+            cardNumber: cardNumber,
+            cardName: cardName,
+            photo: dataUrl.replace(/^data:image\/jpeg;base64,/, '')
+
+            // cardno: "1234567891022222",
+            // provid: "MSG",
+            // photo: capturedImageBase64.replace(/^data:image\/jpeg;base64,/, '')
+      };
+
+      if (isNaN(Number(cardNumber))) {
+          alert("Card number required number only");
+          capturedPhoto.src = "";
+          photoContainer.style.display = 'none';
+          return;
+      }
+      else{
+          console.log(JSON.stringify(data));
+
+      // $.ajax({
+      //     type: "POST",
+      //     url:'api/enroll',
+      //     data: JSON.stringify(data),
+      //     contentType: "application/json",
+      //     success: function (data) {
+      //         if(data.status == 0){
+      //             alert("Sukses enrollment");
+      //             alert("Jumlah face yang ter-record" + data.count);
+      //         }
+      //         else{
+      //             alert(data.error);
+      //             alert("Jumlah face yang ter-record" + data.count);
+      //         }
+      //     },
+
+      //     error: function (error) {
+      //             console.log(`Error ${error}`);
+      //         }
+      //     });
+
+
+      // $.ajax({
+      //     url: 'api/verify',
+      //     type: "POST",
+      //     contentType: "application/json",
+      //     data: JSON.stringify(data),
+      //     success: function (data) {
+      //     if (data.status == 0) {
+      //         alert("Sukses enrollment");
+      //         alert("Jumlah face yang ter-record: " + data.count);
+      //     } else {
+      //         alert(data.error);
+      //         alert("Jumlah face yang ter-record: " + data.count);
+      //     }
+      //     },
+      //     error: function (error) {
+      //     console.log(`Error ${error}`);
+      //     alert(error);
+      //     }
+      // });
+
+
+        status.textContent = 'Face captured successfully!';
+        status.style.color = 'green';
+      }
+    });
+
+    //=====================================AJAX=================================
+    
+  </script>
+
+</body>
+</html>
